@@ -154,6 +154,17 @@ where
             _ => unreachable!(),
         }
     }
+
+    pub fn get_fence(&mut self) -> Option<&mut Fence> {
+        match &mut *self.state.get_mut().unwrap() {
+            FenceSignalFutureState::Pending(_, fence) |
+            FenceSignalFutureState::PartiallyFlushed(_, fence) |
+            FenceSignalFutureState::Flushed(_, fence) => {
+                Some(fence)
+            }
+            _ => None
+        }
+    }
 }
 
 impl<F> FenceSignalFuture<F>

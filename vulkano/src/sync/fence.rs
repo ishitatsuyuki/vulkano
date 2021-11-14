@@ -196,7 +196,7 @@ where
     /// # Panic
     ///
     /// Panics if not all fences belong to the same device.
-    pub fn multi_wait<'a, I>(iter: I, timeout: Option<Duration>) -> Result<(), FenceWaitError>
+    pub fn multi_wait<'a, I>(iter: I, timeout: Option<Duration>, wait_all: bool) -> Result<(), FenceWaitError>
     where
         I: IntoIterator<Item = &'a Fence<D>>,
         D: 'a,
@@ -240,7 +240,7 @@ where
                     device.internal_object(),
                     fences.len() as u32,
                     fences.as_ptr(),
-                    ash::vk::TRUE,
+                    wait_all.into(),
                     timeout_ns,
                 ))?
             }
