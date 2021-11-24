@@ -861,6 +861,7 @@ fn size_of_type(spirv: &Spirv, id: Id) -> Option<DeviceSize> {
 
             Some(end_of_struct)
         }
+        Instruction::TypePointer { .. } => Some(8),
         _ => panic!("Type {} not found", id),
     }
 }

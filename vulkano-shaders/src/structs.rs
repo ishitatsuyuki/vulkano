@@ -665,6 +665,19 @@ pub(super) fn type_from_id(
                 .unwrap_or(1);
             return (ty, Cow::from(name_string.to_owned()), size, align);
         }
+        &Instruction::TypePointer { .. } => {
+            #[repr(C)]
+            struct Foo {
+                data: u64,
+                after: u8,
+            }
+            return (
+                quote! {u64},
+                Cow::from("__pointer"),
+                Some(std::mem::size_of::<u64>()),
+                mem::align_of::<Foo>(),
+            );
+        }
         _ => panic!("Type #{} not found", searched),
     }
 }

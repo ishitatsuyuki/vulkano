@@ -42,6 +42,7 @@ pub struct ComputePipeline {
     layout: Arc<PipelineLayout>,
     descriptor_requirements: FnvHashMap<(u32, u32), DescriptorRequirements>,
     num_used_descriptor_sets: u32,
+    subgroup_size_control: Option<u32>,
 }
 
 impl ComputePipeline {
@@ -55,6 +56,7 @@ impl ComputePipeline {
         shader: EntryPoint,
         specialization_constants: &Css,
         cache: Option<Arc<PipelineCache>>,
+        subgroup_size_control: Option<u32>,
         func: F,
     ) -> Result<Arc<ComputePipeline>, ComputePipelineCreationError>
     where
@@ -82,6 +84,7 @@ impl ComputePipeline {
                 specialization_constants,
                 layout,
                 cache,
+                subgroup_size_control
             )
         }
     }
@@ -96,6 +99,7 @@ impl ComputePipeline {
         specialization_constants: &Css,
         layout: Arc<PipelineLayout>,
         cache: Option<Arc<PipelineCache>>,
+        subgroup_size_control: Option<u32>,
     ) -> Result<Arc<ComputePipeline>, ComputePipelineCreationError>
     where
         Css: SpecializationConstants,
@@ -125,6 +129,7 @@ impl ComputePipeline {
                 specialization_constants,
                 layout,
                 cache,
+                subgroup_size_control,
             )
         }
     }
@@ -137,6 +142,7 @@ impl ComputePipeline {
         specialization_constants: &Css,
         layout: Arc<PipelineLayout>,
         cache: Option<Arc<PipelineCache>>,
+        subgroup_size_control: Option<u32>,
     ) -> Result<Arc<ComputePipeline>, ComputePipelineCreationError>
     where
         Css: SpecializationConstants,
@@ -152,6 +158,13 @@ impl ComputePipeline {
                 p_data: specialization_constants as *const Css as *const _,
             };
 
+            let subgroup_size_control = subgroup_size_control.map(|required_subgroup_size| {
+                ash::vk::PipelineShaderStageRequiredSubgroupSizeCreateInfoEXT {
+                    required_subgroup_size,
+                    ..Default::default()
+                }
+            });
+
             let stage = ash::vk::PipelineShaderStageCreateInfo {
                 flags: ash::vk::PipelineShaderStageCreateFlags::empty(),
                 stage: ash::vk::ShaderStageFlags::COMPUTE,
@@ -162,6 +175,13 @@ impl ComputePipeline {
                 } else {
                     &specialization
                 },
+                p_next: subgroup_size_control
+                    .as_ref()
+                    .map(|pr| {
+                        pr as *const ash::vk::PipelineShaderStageRequiredSubgroupSizeCreateInfoEXT
+                            as *const _
+                    })
+                    .unwrap_or(ptr::null()),
                 ..Default::default()
             };
 
@@ -208,6 +228,7 @@ impl ComputePipeline {
             layout,
             descriptor_requirements,
             num_used_descriptor_sets,
+            subgroup_size_control,
         }))
     }
 
