@@ -3427,6 +3427,11 @@ where
             Ok(self)
         }
     }
+
+    pub unsafe fn host_read_barrier(&mut self, buffer: &impl BufferAccess) -> &mut Self {
+        self.inner.host_read_barrier(buffer);
+        self
+    }
 }
 
 impl<P> AutoCommandBufferBuilder<SecondaryAutoCommandBuffer<P::Alloc>, P> where

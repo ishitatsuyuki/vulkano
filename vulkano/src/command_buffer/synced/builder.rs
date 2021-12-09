@@ -7,54 +7,58 @@
 // notice may not be copied, modified, or distributed except
 // according to those terms.
 
-pub use self::commands::SyncCommandBufferBuilderBindDescriptorSets;
-pub use self::commands::SyncCommandBufferBuilderBindVertexBuffer;
-pub use self::commands::SyncCommandBufferBuilderExecuteCommands;
-use super::{Command, KeyTy, ResourceFinalState, ResourceKey, ResourceUse, SyncCommandBuffer};
+use std::borrow::Cow;
+use std::collections::hash_map::Entry;
+use std::error;
+use std::fmt;
+use std::sync::Arc;
+
+use fnv::FnvHashMap;
+use smallvec::SmallVec;
+
 use crate::buffer::BufferAccess;
-use crate::command_buffer::pool::UnsafeCommandPoolAlloc;
-use crate::command_buffer::sys::UnsafeCommandBufferBuilder;
-use crate::command_buffer::sys::UnsafeCommandBufferBuilderPipelineBarrier;
 use crate::command_buffer::CommandBufferExecError;
 use crate::command_buffer::CommandBufferLevel;
 use crate::command_buffer::CommandBufferUsage;
 use crate::command_buffer::ImageUninitializedSafe;
+use crate::command_buffer::pool::UnsafeCommandPoolAlloc;
+use crate::command_buffer::sys::UnsafeCommandBufferBuilder;
+use crate::command_buffer::sys::UnsafeCommandBufferBuilderPipelineBarrier;
 use crate::descriptor_set::DescriptorSetResources;
 use crate::descriptor_set::DescriptorSetWithOffsets;
 use crate::device::Device;
 use crate::device::DeviceOwned;
 use crate::image::ImageAccess;
 use crate::image::ImageLayout;
+use crate::OomError;
 use crate::pipeline::color_blend::LogicOp;
+use crate::pipeline::ComputePipeline;
 use crate::pipeline::depth_stencil::CompareOp;
 use crate::pipeline::depth_stencil::StencilOp;
 use crate::pipeline::depth_stencil::StencilOps;
+use crate::pipeline::DynamicState;
+use crate::pipeline::GraphicsPipeline;
 use crate::pipeline::input_assembly::IndexType;
 use crate::pipeline::input_assembly::PrimitiveTopology;
 use crate::pipeline::layout::PipelineLayout;
+use crate::pipeline::PipelineBindPoint;
 use crate::pipeline::rasterization::CullMode;
 use crate::pipeline::rasterization::DepthBias;
 use crate::pipeline::rasterization::FrontFace;
 use crate::pipeline::rasterization::LineStipple;
 use crate::pipeline::viewport::Scissor;
 use crate::pipeline::viewport::Viewport;
-use crate::pipeline::ComputePipeline;
-use crate::pipeline::DynamicState;
-use crate::pipeline::GraphicsPipeline;
-use crate::pipeline::PipelineBindPoint;
 use crate::range_set::RangeSet;
 use crate::sync::AccessFlags;
 use crate::sync::PipelineMemoryAccess;
 use crate::sync::PipelineStages;
-use crate::OomError;
 use crate::VulkanObject;
-use fnv::FnvHashMap;
-use smallvec::SmallVec;
-use std::borrow::Cow;
-use std::collections::hash_map::Entry;
-use std::error;
-use std::fmt;
-use std::sync::Arc;
+
+use super::{Command, KeyTy, ResourceFinalState, ResourceKey, ResourceUse, SyncCommandBuffer};
+
+pub use self::commands::SyncCommandBufferBuilderBindDescriptorSets;
+pub use self::commands::SyncCommandBufferBuilderBindVertexBuffer;
+pub use self::commands::SyncCommandBufferBuilderExecuteCommands;
 
 #[path = "commands.rs"]
 mod commands;
@@ -218,7 +222,7 @@ impl SyncCommandBufferBuilder {
         &mut self,
         command: C,
         resources: impl IntoIterator<
-            Item = (
+            Item=(
                 KeyTy,
                 Cow<'static, str>,
                 Option<(
@@ -230,8 +234,8 @@ impl SyncCommandBufferBuilder {
             ),
         >,
     ) -> Result<(), SyncCommandBufferBuilderError>
-    where
-        C: Command + 'static,
+        where
+            C: Command + 'static,
     {
         // TODO: see comment for the `is_poisoned` member in the struct
         assert!(
@@ -512,6 +516,34 @@ impl SyncCommandBufferBuilder {
         Ok(())
     }
 
+    pub unsafe fn host_read_barrier(&mut self, buffer: &impl BufferAccess) -> &mut Self {
+        let mut builder = UnsafeCommandBufferBuilderPipelineBarrier::new();
+        builder.add_buffer_memory_barrier(buffer,
+                                          PipelineStages {
+                                              all_commands: true,
+                                              ..PipelineStages::none()
+                                          },
+                                          AccessFlags {
+                                              memory_write: true,
+                                              ..AccessFlags::none()
+                                          },
+                                          PipelineStages {
+                                              host: true,
+                                              ..PipelineStages::none()
+                                          },
+                                          AccessFlags {
+                                              host_read: true,
+                                              ..AccessFlags::none()
+                                          },
+                                          false,
+                                          None,
+                                          0,
+                                          buffer.size(),
+        );
+        self.inner.pipeline_barrier(&builder);
+        return self;
+    }
+
     /// Builds the command buffer and turns it into a `SyncCommandBuffer`.
     #[inline]
     pub fn build(mut self) -> Result<SyncCommandBuffer, OomError> {
@@ -725,7 +757,7 @@ struct CurrentState {
 }
 
 impl CurrentState {
-    fn reset_dynamic_states(&mut self, states: impl IntoIterator<Item = DynamicState>) {
+    fn reset_dynamic_states(&mut self, states: impl IntoIterator<Item=DynamicState>) {
         for state in states {
             match state {
                 DynamicState::BlendConstants => self.blend_constants = None,

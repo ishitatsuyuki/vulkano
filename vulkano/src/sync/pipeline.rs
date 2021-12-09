@@ -91,7 +91,7 @@ impl From<PipelineStage> for ash::vk::PipelineStageFlags {
 }
 
 pipeline_stages! {
-    top_of_pipe, TopOfPipe => ash::vk::PipelineStageFlags::TOP_OF_PIPE, ash::vk::QueueFlags::empty();
+    top_of_pipe, TopOfPipe => ash::vk::PipelineStageFlags::TOP_OF_PIPE, ash::vk::QueueFlags::all();
     draw_indirect, DrawIndirect => ash::vk::PipelineStageFlags::DRAW_INDIRECT, ash::vk::QueueFlags::GRAPHICS | ash::vk::QueueFlags::COMPUTE;
     vertex_input, VertexInput => ash::vk::PipelineStageFlags::VERTEX_INPUT, ash::vk::QueueFlags::GRAPHICS;
     vertex_shader, VertexShader => ash::vk::PipelineStageFlags::VERTEX_SHADER, ash::vk::QueueFlags::GRAPHICS;
@@ -104,10 +104,10 @@ pipeline_stages! {
     color_attachment_output, ColorAttachmentOutput => ash::vk::PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT, ash::vk::QueueFlags::GRAPHICS;
     compute_shader, ComputeShader => ash::vk::PipelineStageFlags::COMPUTE_SHADER, ash::vk::QueueFlags::COMPUTE;
     transfer, Transfer => ash::vk::PipelineStageFlags::TRANSFER, ash::vk::QueueFlags::GRAPHICS | ash::vk::QueueFlags::COMPUTE | ash::vk::QueueFlags::TRANSFER;
-    bottom_of_pipe, BottomOfPipe => ash::vk::PipelineStageFlags::BOTTOM_OF_PIPE, ash::vk::QueueFlags::empty();
+    bottom_of_pipe, BottomOfPipe => ash::vk::PipelineStageFlags::BOTTOM_OF_PIPE, ash::vk::QueueFlags::all();
     host, Host => ash::vk::PipelineStageFlags::HOST, ash::vk::QueueFlags::empty();
     all_graphics, AllGraphics => ash::vk::PipelineStageFlags::ALL_GRAPHICS, ash::vk::QueueFlags::GRAPHICS;
-    all_commands, AllCommands => ash::vk::PipelineStageFlags::ALL_COMMANDS, ash::vk::QueueFlags::empty();
+    all_commands, AllCommands => ash::vk::PipelineStageFlags::ALL_COMMANDS, ash::vk::QueueFlags::all();
     ray_tracing_shader, RayTracingShader => ash::vk::PipelineStageFlags::RAY_TRACING_SHADER_KHR, ash::vk::QueueFlags::GRAPHICS | ash::vk::QueueFlags::COMPUTE | ash::vk::QueueFlags::TRANSFER;
 }
 
