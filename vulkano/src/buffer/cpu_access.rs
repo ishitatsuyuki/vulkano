@@ -249,17 +249,17 @@ impl<T: ?Sized> CpuAccessibleBuffer<T> {
             MappingRequirement::Map,
             DedicatedAlloc::Buffer(&buffer),
             |m| {
-                if m.is_host_cached() {
-                    if host_cached {
+                if host_cached {
+                    if m.is_host_cached() {
                         AllocFromRequirementsFilter::Preferred
                     } else {
                         AllocFromRequirementsFilter::Allowed
                     }
                 } else {
-                    if host_cached {
-                        AllocFromRequirementsFilter::Allowed
-                    } else {
+                    if m.is_device_local() {
                         AllocFromRequirementsFilter::Preferred
+                    } else {
+                        AllocFromRequirementsFilter::Allowed
                     }
                 }
             },
